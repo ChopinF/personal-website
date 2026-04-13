@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+      <meta charset="utf-8">
+      <title>Lazar Alexandru</title>
+
+      <!-- Google Analytics -->
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-ESM45L0LJ2"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-ESM45L0LJ2');
+      </script>
+
+      <script src="script.js" defer></script> 
+      <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+    </head>
+
+  <script>
+
+class Snowflake {
+  constructor() {
+    this.reset(true);
+    this.size = random(2, 5);
+    this.color = color(random(0, 100), random(0, 100), random(0, 100));
+  }
+
+  reset(startAtTop = false) {
+    this.radius = sqrt(random((width * 0.5) ** 2));
+    this.initialAngle = random(0, 360);
+    this.posY = startAtTop ? random(-height, 0) : -random(20, 100);
+  }
+
+  update(timeSeconds) {
+    const angularSpeed = 35;
+    const angle = this.initialAngle + angularSpeed * timeSeconds;
+
+    this.posX = width / 2 + this.radius * sin(angle);
+
+    const ySpeed = 8 / this.size;
+    this.posY += ySpeed;
+
+    if (this.posY > height + 10) this.reset(false);//when it reaches on the bottom we reset to the top
+  }
+
+  display() {
+    push();
+    noStroke();
+    fill(this.color);
+    ellipse(this.posX, this.posY, this.size, this.size);
+    pop();
+  }
+}
+
+let snowflakes = [];
+let segments1 = [], segments2 = [],
+  segments3 = [], segments4 = [], segments5 = [], segments6 = [];
+const delayPerSegment = 0.5;
+
+
+function setup() {
+  const cnv = createCanvas(windowWidth, windowHeight);
+  cnv.parent('wrapper');
+  pixelDensity(1);
+  stroke(0);
+  strokeWeight(1);
+  noFill();
+
+  buildTree(width * 0.425, 0.97 * height, 30, -PI / 2, 1); // second place
+  buildTree(width * 0.58, 0.985 * height, 20, -PI / 2, 2); // thrid place
+
+  // right side
+  buildTree(width * 0.95, height, 40, -PI / 2, 5);
+  buildTree(width * 0.75, height, 90, -PI / 2, 3);
+  //left side
+  buildTree(width * 0.15, height, 120, -PI / 2, 4);
+  buildTree(width * 0.05, height, 30, -PI / 2, 5);
+  buildTree(width * 0.32, height, 60, -PI / 2, 6);
+
+  [segments1, segments2, segments3, segments4, segments5, segments6].forEach(arr => {
+    arr.forEach((s, i) => {
+      setTimeout(() => { s.visible = true; }, i * delayPerSegment * 100 * Math.random());
+    });
+  });
+
+  angleMode(DEGREES);
+
+  for (let i = 0; i < 100; i++) snowflakes.push(new Snowflake());
+  frameRate(60);
+}
+
+function draw() {
+  //  background(255);
+  clear();
+
+  stroke(0);
+  strokeWeight(1);
+  noFill();
+
+  for (const s of segments1) if (s.visible) line(s.x1, s.y1, s.x2, s.y2);
+  for (const s of segments2) if (s.visible) line(s.x1, s.y1, s.x2, s.y2);
+  for (const s of segments3) if (s.visible) line(s.x1, s.y1, s.x2, s.y2);
+  for (const s of segments4) if (s.visible) line(s.x1, s.y1, s.x2, s.y2);
+  for (const s of segments5) if (s.visible) line(s.x1, s.y1, s.x2, s.y2);
+  for (const s of segments6) if (s.visible) line(s.x1, s.y1, s.x2, s.y2);
+
+  const t = millis() * 0.001;
+
+  for (const flake of snowflakes) {
+    flake.update(t);
+    flake.display();
+  }
+
+  drawEyes();
+}
+
+function drawEyes() {
+  // left eye
+  let leftX = windowWidth / 2 - 9;
+  let leftY = windowHeight - 304.5;
+
+  // right eye
+  let rightX = windowWidth / 2 + 31.5;
+  let rightY = windowHeight - 304.5;
+
+  // angle between left eye and mouse
+  let leftAngle = atan2(mouseY - leftY, mouseX - leftX);
+
+  push();
+  translate(leftX, leftY);
+  ellipse(0, 1, 40, 40);// exterior circle
+  rotate(leftAngle);
+  fill(0);
+  ellipse(12.5, 0, 25, 25);
+  pop();
+
+  // angle between right eye and mouse
+  let rightAngle = atan2(mouseY - rightY, mouseX - rightX);
+
+  push();
+  translate(rightX, rightY);
+  ellipse(0, 1, 40, 40);// exterior circle
+  rotate(rightAngle);
+  fill(0);
+  ellipse(12.5, 0, 25, 25);
+  pop();
+
+}
+
+function buildTree(x, y, len, theta, direction) {
+  const x2 = x + cos(theta) * len;
+  const y2 = y + sin(theta) * len;
+
+  const seg = { x1: x, y1: y, x2, y2, visible: false };
+  switch (direction) {
+    case 1: segments1.push(seg); break;
+    case 2: segments2.push(seg); break;
+    case 3: segments3.push(seg); break;
+    case 4: segments4.push(seg); break;
+    case 5: segments5.push(seg); break;
+    case 6: segments6.push(seg); break;
+  }
+
+  if (len > 8) {
+    const angle = PI / 0.46;
+    const multiplicator = 0.69;
+    buildTree(x2, y2, len * multiplicator, theta - angle, direction);
+    buildTree(x2, y2, len * multiplicator, theta + angle, direction);
+  }
+}
+
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
+
+  </script>
+
+  <style>
+
+  @layer base, components;
+
+  @layer base {
+    :root {
+      font-family: "Liberation Mono";
+    }
+  }
+
+  @layer components {
+    #back canvas {
+      position: absolute;
+      inset: 0; 
+      z-index: 1;
+      display: block;
+      pointer-events: none;
+    }
+
+    #wrapper {
+      justify-content: start;
+      height: 100%; 
+      min-height: 100vh;
+      width: 100vw;
+      position: relative;
+      z-index: 1;
+    }
+
+    #in {
+      padding-top: 1%;
+    }
+
+    #minion {
+      position: absolute;
+      bottom: 0;
+      z-index: 0;
+    }
+
+    .centered {
+      align-items: center;
+      flex-direction: column;
+      display: flex;
+    }
+
+    .columns {
+      align-items: center;
+      flex-direction: column;
+      display: flex;
+    }
+
+    .margin-top-bot {
+      margin-bottom: 1%;
+      margin-top: 1%;
+    }
+
+    a {
+      color: blue;
+      text-decoration: none;
+    }
+
+    #full-name, #bio, #jobs, #in, #projects, #skills  {
+      font-size: 20px;
+      z-index: 2;
+      margin-bottom: 1%;
+    }
+
+    #full-name{
+      font-size: 40px;
+    }
+
+    .oblique {
+      font-style: oblique;
+    }
+    .head-info {
+      font-size: 30px;
+    }
+
+  }
+  </style>
+
+  <body>
+
+    <div id="back">
+
+      <div id="wrapper" class="centered">
+
+        <img loading="lazy" src="./minion.svg" alt="minion" id="minion" />
+
+        <div id="in" class="centered">
+
+          <div id="full-name">
+            LAZAR ALEXANDRU 
+          </div>
+
+          <div id="bio">
+            <a target="_blank" href="./cv.pdf">CV </a> |
+            <a target="_blank" href="https://www.linkedin.com/in/alexandru-lazar-715b4b212/">LinkedIn </a>| 
+            <a target="_blank" href="https://github.com/ChopinF">GitHub </a> |
+            <a target="_blank" href="mailto:alchopinf@proton.me">alchopinf@proton.me</a>
+          </div>
+
+          <div id="jobs" class="centered">
+            <b class="head-info">Experience</b>
+            <div class="oblique">Software Engineer <a target="_blank" href="https://www.generatik.com/">Generatik</a> -> <b>2026</b></div> 
+            <div class="oblique">Junior Software Engineer Endava -> <b>2025</b> </div> 
+            <div class="oblique">Software Engineer for <a target="_blank" href="https://akyx.digital/">AkyX</a> -> <b>start 2025</b></div>
+            <div class="oblique">Ex-Quant Intern Developer at Faro-Devlopment -> <b>2024</b></div>
+          </div>
+
+          <div id="projects" class="columns ">
+
+            <b class="head-info">Personal projects</b>
+
+            <div>
+              1) <b>LSP </b>(language server protocol) in <b>go && lua</b> for <b>NeoVim</b> that supports diagnostics 
+              <a target="_blank" href="https://github.com/ChopinF/Css-CustomClasses-LSP">url</a>
+            </div>
+
+            <div>
+              for custom CSS classes within React / NextJS projects. 
+            </div>
+
+            <div>
+              2) <b>Gambling</b> Agentic Framework for Polymarket, just some <b>PROMPT ENGINERING</b> basically.
+            </div>
+
+          </div>
+
+          <div id="skills" class="centered">
+
+            <b class="head-info">Skills</b>
+
+            <div class="centered margin-top-bot">
+              <b> Programming: </b> 
+              Html, Css / Tailwind, C/C++, Java, C#
+              Javascript/Typescript, Rust, Go, Lua, Bash, Sql 
+            </div>
+
+            <div>
+              <b>Open source contributions: </b> 
+              <a target="_blank" href="https://github.com/DedSecInside/TorBot/pull/360#event-20195363021">TorBot</a> | 
+              <a target="_blank" href="https://github.com/RazorSh4rk/random-word-api/pull/51#event-21025354025">Random-Word-Api</a>
+            </div>
+
+            <div>
+              <b>Languages:</b> Romanian, English, French
+            </div>
+
+          </div>
+
+      </div>
+
+    </div>
+
+  </body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "personal",
+  "version": "1.0.0",
+  "description": "- ceva - [x] altceva - [x] altceva2 - [x] altceva3 - [x] altceva4 - [x] altceva5 -  altceva5",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
