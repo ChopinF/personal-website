@@ -7,3 +7,7 @@
 - [x] altceva4
 - [x] altceva5
 -  altceva5
+
+# SEO
+- sitemap checked
+- robots.txt
