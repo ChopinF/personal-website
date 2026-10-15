@@ -1,4 +1,7 @@
-// Fetch Google Search Console data for licenta-disertatie-romania.com into licenta-stats/gsc.json.
+// Fetch Google Search Console daily totals for licenta-disertatie-romania.com into licenta-stats/gsc.csv:
+// one row per day, Date,Clicks,Impressions,CTR,Position (same columns as Search Console's "Dates" export).
+// Rewrites the whole file each run from everything the API keeps (16 months), so it is always complete.
+// Totals only: no queries or pages, since this repo's files are public on the personal site.
 // No dependencies: signs the service-account JWT with node:crypto.
 //
 // Key, in order of precedence:
@@ -14,9 +17,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SITE = 'sc-domain:licenta-disertatie-romania.com';
-const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'licenta-stats', 'gsc.json');
-const RANGES = [7, 28, 90];
-const TOP = 25;
+const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'licenta-stats', 'gsc.csv');
+const HISTORY_DAYS = 486; // the API keeps about 16 months
 
 function loadKey() {
   let raw = process.env.GSC_KEY_JSON;
@@ -68,62 +70,30 @@ async function query(accessToken, body) {
 
 const day = (d) => d.toISOString().slice(0, 10);
 const addDays = (s, n) => day(new Date(Date.parse(s) + n * 864e5));
-const round = (n, d) => Math.round(n * 10 ** d) / 10 ** d;
-const metrics = (r) => ({
-  clicks: r.clicks,
-  impressions: r.impressions,
-  ctr: round(r.ctr, 4),
-  position: round(r.position, 1),
-});
 
 const accessToken = await token(loadKey());
-
-// Daily series for the longest range; the last day with final data anchors every range.
 const today = day(new Date());
-const daily = await query(accessToken, {
-  startDate: addDays(today, -(Math.max(...RANGES) + 6)),
+const rows = await query(accessToken, {
+  startDate: addDays(today, -HISTORY_DAYS),
   endDate: today,
   dimensions: ['date'],
+  rowLimit: 1000,
 });
-if (!daily.length) throw new Error('No data returned');
-const lastDay = daily.at(-1).keys[0];
+const seen = rows.filter((r) => r.impressions > 0);
+if (!seen.length) throw new Error('No data returned');
 
-const ranges = {};
-for (const n of RANGES) {
-  const startDate = addDays(lastDay, -(n - 1));
-  const base = { startDate, endDate: lastDay };
-  const [[total = { clicks: 0, impressions: 0, ctr: 0, position: 0 }], queries, pages, countries, devices] =
-    await Promise.all([
-      query(accessToken, base),
-      ...['query', 'page', 'country', 'device'].map((d) =>
-        query(accessToken, { ...base, dimensions: [d], rowLimit: TOP }),
-      ),
-    ]);
-  const byDate = new Map(daily.map((r) => [r.keys[0], r]));
-  const days = [];
-  for (let d = startDate; d <= lastDay; d = addDays(d, 1)) {
-    const r = byDate.get(d) || { clicks: 0, impressions: 0, ctr: 0, position: 0 };
-    days.push({ date: d, ...metrics(r) });
-  }
-  const table = (rows) => rows.map((r) => ({ key: r.keys[0], ...metrics(r) }));
-  ranges[n] = {
-    startDate,
-    endDate: lastDay,
-    totals: metrics(total),
-    days,
-    queries: table(queries),
-    pages: table(pages).map((p) => ({ ...p, key: p.key.replace(/^https?:\/\/[^/]+/, '') || '/' })),
-    countries: table(countries),
-    devices: table(devices),
-  };
+// One row per day from the first day with impressions to the last final day. Days with no impressions
+// get 0 and no position (Google returns empty rows back to when the property was added).
+const byDate = new Map(seen.map((r) => [r.keys[0], r]));
+const firstDay = seen[0].keys[0];
+const lastDay = rows.at(-1).keys[0];
+const lines = ['Date,Clicks,Impressions,CTR,Position'];
+for (let d = firstDay; d <= lastDay; d = addDays(d, 1)) {
+  const r = byDate.get(d);
+  lines.push(r ? `${d},${r.clicks},${r.impressions},${(r.ctr * 100).toFixed(2)}%,${r.position.toFixed(1)}` : `${d},0,0,0.00%,`);
 }
 
-const out = { site: 'licenta-disertatie-romania.com', lastDay, ranges };
+const prevLast = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8').trim().split('\n').at(-1).split(',')[0] : null;
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
-const prev = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : null;
-fs.writeFileSync(OUT, JSON.stringify(out, null, 1) + '\n');
-console.log(
-  `gsc.json: data through ${lastDay}` +
-    (prev ? ` (was ${prev.lastDay})` : '') +
-    `, 28 days: ${ranges[28].totals.clicks} clicks, ${ranges[28].totals.impressions} impressions`,
-);
+fs.writeFileSync(OUT, lines.join('\n') + '\n');
+console.log(`gsc.csv: ${lines.length - 1} days, ${firstDay} to ${lastDay}` + (prevLast ? ` (last day was ${prevLast})` : ''));
