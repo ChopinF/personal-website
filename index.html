@@ -24,6 +24,7 @@
 
       <script src="script.js" defer></script> 
       <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     </head>
 
   <script>
@@ -263,10 +264,77 @@ function windowResized() {
       font-size: 30px;
     }
 
+    .tile { flex: 1; padding: 12px; cursor: pointer; color: #555; font-size: 13px; }
+    .tile b { display: block; font-size: 28px; font-weight: normal; }
+    .tile.on { color: #fff; }
+
   }
   </style>
 
+  <script>
+    let loaded = false;
+    function loadStats() {
+      if (loaded) return;
+      fetch('./licenta-stats/gsc.csv').then(r => r.text()).then(text => {
+        loaded = true;
+        const rows = text.trim().split('\n').slice(1).map(l => l.split(','));
+        const col = i => rows.map(r => r[i] === '' ? null : parseFloat(r[i]));
+        const clicks = col(1), impr = col(2), ctr = col(3), pos = col(4);
+        const sum = a => a.reduce((x, y) => x + (y || 0), 0);
+        const avgPos = pos.reduce((s, p, i) => s + (p || 0) * impr[i], 0) / sum(impr);
+
+        const metrics = [
+          { label: 'Total clicks',      data: clicks, color: '#4285f4', total: sum(clicks), on: true },
+          { label: 'Total impressions', data: impr,   color: '#5e35b1', total: sum(impr),   on: true },
+          { label: 'Average CTR',       data: ctr,    color: '#00897b', total: (sum(clicks) / sum(impr) * 100).toFixed(1) + '%' },
+          { label: 'Average position',  data: pos,    color: '#e8710a', total: avgPos.toFixed(1), reverse: true },
+        ];
+
+        // one invisible y-axis per metric -> each line scales to itself
+        const scales = { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkipPadding: 30 } } };
+        metrics.forEach((m, i) => scales['y' + i] = { display: false, reverse: !!m.reverse, beginAtZero: !m.reverse });
+
+        const chart = new Chart(document.getElementById('chart'), {
+          type: 'line',
+          data: {
+            labels: rows.map(r => r[0]),
+            datasets: metrics.map((m, i) => ({
+              label: m.label, data: m.data, yAxisID: 'y' + i, hidden: !m.on,
+              borderColor: m.color, backgroundColor: m.color,
+              pointRadius: 0, tension: 0.3, spanGaps: true
+            }))
+          },
+          options: {
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: false } },
+            scales
+          }
+        });
+
+        metrics.forEach((m, i) => {
+          const t = document.createElement('div');
+          t.className = 'tile';
+          t.innerHTML = `${m.label}<b>${m.total}</b>`;
+          const paint = () => {
+            const on = chart.isDatasetVisible(i);
+            t.classList.toggle('on', on);
+            t.style.background = on ? m.color : '';
+          };
+          t.onclick = () => { chart.setDatasetVisibility(i, !chart.isDatasetVisible(i)); chart.update(); paint(); };
+          paint();
+          tiles.appendChild(t);
+        });
+      });
+    }
+  </script>
+
   <body>
+
+    <dialog id="stats" style="width:min(1000px,90vw)">
+      <button onclick="stats.close()">✕</button> Revenue <b>3k</b>
+      <div id="tiles" style="display:flex; margin:10px 0"></div>
+      <canvas id="chart"></canvas>
+    </dialog>
 
     <div id="back">
 
@@ -288,13 +356,13 @@ function windowResized() {
           </div>
 
           <div id="jobs" class="centered">
-            <b class="head-info">Experience</b>
+            <b class="head-info">Experience | Ascencion </b>
             <div class="oblique">Founding Engineer <a target="_blank" href="https://www.educato.com/">Educato AI</a> -> <b>2026</b></div> 
             <div class="oblique">Software Engineer Intern <a target="_blank" href="https://www.linkedin.com/company/bolt-eu">Bolt</a> -> <b>2026</b></div> 
             <div class="oblique">Software Engineer <a target="_blank" href="https://www.generatik.com/">Generatik</a> -> <b>2026</b></div> 
-            <div class="oblique">Junior Software Engineer Endava -> <b>2025</b> </div> 
+            <div class="oblique">Software Engineer Endava -> <b>2025</b> </div> 
             <div class="oblique">Software Engineer for <a target="_blank" href="https://akyx.digital/">AkyX</a> -> <b>start 2025</b></div>
-            <div class="oblique">Ex-Quant Intern Developer at Faro-Development -> <b>2024</b></div>
+            <div class="oblique">Quant Intern Developer at Faro-Development -> <b>2024</b></div>
           </div>
 
           <div id="projects" class="columns ">
@@ -311,7 +379,7 @@ function windowResized() {
             </div>
 
             <div>
-              2) <b>Market Making</b> Agentic Framework for Polymarket, visualiser for trades / bets.
+              2) <a href="#" onclick="event.preventDefault(); loadStats(); stats.showModal()">Stealth mode</a> - data may not be up to date, gsc is lazy
             </div>
 
           </div>
