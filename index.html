@@ -289,7 +289,6 @@ function windowResized() {
         const sum = a => a.reduce((x, y) => x + (y || 0), 0);
         const day = (d, opts) => new Date(d + 'T00:00:00Z').toLocaleDateString('en-US', { ...opts, timeZone: 'UTC' });
 
-        // totals over rows [a, b), like the GSC tiles; null when the range has no impressions
         const totals = (a, b) => {
           a = Math.max(a, 0);
           const c = sum(clicks.slice(a, b)), im = sum(impr.slice(a, b));
@@ -306,11 +305,11 @@ function windowResized() {
         ];
         const n = metrics.length;
 
-        // one invisible y-axis per metric -> each line scales to itself (previous period shares it)
+        // one invisible y-axis per metric -> each line scales to itself
         const scales = { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkipPadding: 30 } } };
         metrics.forEach((m, i) => scales['y' + i] = { display: false, reverse: !!m.reverse, beginAtZero: !m.reverse });
 
-        // datasets 0..n-1 are the selected range, n..2n-1 the same metrics for the previous period (dashed)
+        // datasets 0..n-1: selected range, n..2n-1: previous period
         const line = (m, i, prev) => ({
           label: m.label, yAxisID: 'y' + i, prev,
           borderColor: m.color, backgroundColor: m.color, borderDash: prev ? [5, 5] : [], borderWidth: prev ? 1.5 : 3,
@@ -323,7 +322,6 @@ function windowResized() {
             interaction: { mode: 'index', intersect: false },
             plugins: {
               legend: { display: false },
-              // GSC-style tooltip title: "Wed, Oct 14, 2026"
               tooltip: { filter: item => item.raw != null, callbacks: {
                 title: items => day(items[0].label, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
                 label: c => c.dataset.prev
@@ -348,13 +346,11 @@ function windowResized() {
           chart.data.labels = dates.slice(state.start);
           metrics.forEach((m, i) => {
             chart.data.datasets[i].data = m.data.slice(state.start);
-            // previous period aligned day by day; null where it starts before the first day of data
             chart.data.datasets[n + i].data = dates.slice(state.start).map((_, k) => m.data[state.start - state.len + k] ?? null);
             chart.setDatasetVisibility(n + i, compare && chart.isDatasetVisible(i));
 
             let delta = '';
             if (prev) {
-              // position: absolute change, lower is better; the rest: % change
               const d = m.reverse ? cur[i] - prev[i] : (cur[i] - prev[i]) / prev[i] * 100;
               const good = m.reverse ? d < 0 : d > 0;
               delta = isFinite(d) ? `<small>${good ? '▲' : d ? '▼' : ''} ${d > 0 ? '+' : ''}${d.toFixed(Math.abs(d) < 100 ? 1 : 0)}${m.reverse ? '' : '%'} vs ${m.fmt(prev[i])}</small>` : '';
