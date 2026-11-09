@@ -69,8 +69,11 @@ let segments1 = [], segments2 = [],
 const delayPerSegment = 0.5;
 
 
+// canvas covers the whole page (content can be taller than the window)
+const pageHeight = () => Math.max(windowHeight, document.getElementById('wrapper').offsetHeight);
+
 function setup() {
-  const cnv = createCanvas(windowWidth, windowHeight);
+  const cnv = createCanvas(windowWidth, pageHeight());
   cnv.parent('wrapper');
   pixelDensity(1);
   stroke(0);
@@ -128,11 +131,11 @@ function draw() {
 function drawEyes() {
   // left eye
   let leftX = windowWidth / 2 - 9;
-  let leftY = windowHeight - 304.5;
+  let leftY = height - 304.5;
 
   // right eye
   let rightX = windowWidth / 2 + 31.5;
-  let rightY = windowHeight - 304.5;
+  let rightY = height - 304.5;
 
   // angle between left eye and mouse
   let leftAngle = atan2(mouseY - leftY, mouseX - leftX);
@@ -182,7 +185,7 @@ function buildTree(x, y, len, theta, direction) {
 
 
 function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
+  resizeCanvas(windowWidth, pageHeight());
 }
 
   </script>
@@ -194,6 +197,7 @@ function windowResized() {
   @layer base {
     :root {
       font-family: "Liberation Mono";
+      text-transform: lowercase;
     }
   }
 
@@ -217,6 +221,30 @@ function windowResized() {
 
     #in {
       padding-top: 1%;
+      width: 100%;
+      box-sizing: border-box;
+      padding-inline: 32px;
+    }
+
+    /* experience (left), projects (right), skills (left); github graph in the middle */
+    #cols {
+      display: grid;
+      grid-template-columns: max-content 1fr max-content;
+      column-gap: 24px;
+      width: 100%;
+    }
+    #cols > * { margin-bottom: 0; }
+    #cols a { white-space: nowrap; }
+
+    #jobs     { grid-column: 1; grid-row: 1; align-items: flex-start; text-align: left; }
+    #projects { grid-column: 3; grid-row: 2; align-items: flex-end; text-align: right; }
+    #skills   { grid-column: 1; grid-row: 3; align-items: flex-start; text-align: left; margin-top: 28px; }
+    #skills .centered { align-items: flex-start; margin: 4px 0; }
+
+    #gh-box {
+      grid-column: 1 / -1; grid-row: 1; /* centred on the page, between experience and the caption */
+      align-self: center; justify-self: center;
+      z-index: 2; font-size: 11px; text-align: center;
     }
 
     #minion {
@@ -323,10 +351,10 @@ function windowResized() {
             plugins: {
               legend: { display: false },
               tooltip: { filter: item => item.raw != null, callbacks: {
-                title: items => day(items[0].label, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
-                label: c => c.dataset.prev
+                title: items => day(items[0].label, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).toLowerCase(),
+                label: c => (c.dataset.prev
                   ? `${c.dataset.label} (${day(dates[state.start - state.len + c.dataIndex], { weekday: 'short', month: 'short', day: 'numeric' })}): ${c.formattedValue}`
-                  : `${c.dataset.label}: ${c.formattedValue}`
+                  : `${c.dataset.label}: ${c.formattedValue}`).toLowerCase()
               } }
             },
             scales
@@ -418,8 +446,10 @@ function windowResized() {
         <div id="in" class="centered">
 
           <div id="full-name">
-            LAZAR ALEXANDRU 
+            LAZAR ALEXANDRU
           </div>
+
+          <i style="z-index:2; font-size:16px; margin-bottom:1%">it's ugly on purpose</i>
 
           <div id="bio">
             <a target="_blank" href="./cv.pdf" onclick="gtag('event', 'cv_download', {'event_category': 'engagement'})">CV </a> |
@@ -428,6 +458,7 @@ function windowResized() {
             <a target="_blank" href="mailto:alchopinf@proton.me">alchopinf@proton.me</a>
           </div>
 
+          <div id="cols">
           <div id="jobs" class="centered">
             <b class="head-info">Experience | Ascencion </b>
             <div class="oblique">Software Engineer <a target="_blank" href="https://www.educato.com/">Educato AI</a> -> <b>2026</b></div> 
@@ -438,18 +469,18 @@ function windowResized() {
             <div class="oblique">Quant Intern Developer at Faro-Development -> <b>2024</b></div>
           </div>
 
+          <div id="gh-box">
+            <div id="gh-total" style="min-height:1.2em"></div>
+            <div id="gh" style="display:grid; grid-template-rows:repeat(7,4px); grid-auto-flow:column; grid-auto-columns:4px; gap:1px"></div>
+          </div>
+
           <div id="projects" class="columns ">
 
             <b class="head-info">Personal projects</b>
 
-            <div>
-              1) <b>LSP </b>(language server protocol) in <b>go && lua</b> for <b>NeoVim</b> that supports diagnostics 
-              <a target="_blank" href="https://github.com/ChopinF/Css-CustomClasses-LSP">url</a>
-            </div>
-
-            <div>
-              for custom CSS classes within React / NextJS projects. 
-            </div>
+            <div>1) <b>LSP </b>(language server protocol) in <b>go && lua</b></div>
+            <div>for <b>NeoVim</b> that supports diagnostics for custom</div>
+            <div>CSS classes within React / NextJS projects. <a target="_blank" href="https://github.com/ChopinF/Css-CustomClasses-LSP">url</a></div>
 
             <div>
               2) <a href="#" onclick="event.preventDefault(); loadStats(); stats.showModal()">Stealth mode</a> - data may not be up to date, gsc is lazy
@@ -477,11 +508,8 @@ function windowResized() {
             </div>
 
           </div>
-
-          <div style="z-index:2; margin-top:24px; margin-bottom:1%; font-size:14px; max-width:95vw; overflow-x:auto">
-            <div id="gh-total"></div>
-            <div id="gh" style="display:grid; grid-template-rows:repeat(7,10px); grid-auto-flow:column; grid-auto-columns:10px; gap:2px"></div>
           </div>
+
           <script>
             fetch('https://github-contributions-api.jogruber.de/v4/ChopinF?y=last').then(r => r.json()).then(d => {
               const colors = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'];

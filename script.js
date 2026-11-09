@@ -40,8 +40,11 @@ let segments1 = [], segments2 = [],
 const delayPerSegment = 0.5;
 
 
+// canvas covers the whole page (content can be taller than the window)
+const pageHeight = () => Math.max(windowHeight, document.getElementById('wrapper').offsetHeight);
+
 function setup() {
-  const cnv = createCanvas(windowWidth, windowHeight);
+  const cnv = createCanvas(windowWidth, pageHeight());
   cnv.parent('wrapper');
   pixelDensity(1);
   stroke(0);
@@ -99,11 +102,11 @@ function draw() {
 function drawEyes() {
   // left eye
   let leftX = windowWidth / 2 - 9;
-  let leftY = windowHeight - 304.5;
+  let leftY = height - 304.5;
 
   // right eye
   let rightX = windowWidth / 2 + 31.5;
-  let rightY = windowHeight - 304.5;
+  let rightY = height - 304.5;
 
   // angle between left eye and mouse
   let leftAngle = atan2(mouseY - leftY, mouseX - leftX);
@@ -153,6 +156,6 @@ function buildTree(x, y, len, theta, direction) {
 
 
 function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
+  resizeCanvas(windowWidth, pageHeight());
 }
 //
