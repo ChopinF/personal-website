@@ -3,6 +3,7 @@
 @layer base {
   :root {
     font-family: "Liberation Mono";
+    text-transform: lowercase;
   }
 }
 
@@ -26,6 +27,21 @@
 
   #in {
     padding-top: 1%;
+    width: 100%;
+    box-sizing: border-box;
+    padding-inline: 32px;
+  }
+
+  #jobs, #skills, #skills .centered {
+    align-self: flex-start;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  #projects {
+    align-self: flex-end;
+    align-items: flex-end;
+    text-align: right;
   }
 
   #minion {
