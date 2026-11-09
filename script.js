@@ -58,7 +58,7 @@ function setup() {
   buildTree(width * 0.95, height, 40, -PI / 2, 5);
   buildTree(width * 0.75, height, 90, -PI / 2, 3);
   //left side
-  buildTree(width * 0.15, height, 120, -PI / 2, 4);
+  buildTree(width * 0.15, height, 100, -PI / 2, 4);
   buildTree(width * 0.05, height, 30, -PI / 2, 5);
   buildTree(width * 0.32, height, 60, -PI / 2, 6);
 
