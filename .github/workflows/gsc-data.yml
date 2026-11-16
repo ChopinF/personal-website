@@ -1,4 +1,4 @@
-# Search Console data: every 2 days it rewrites licenta-stats/gsc.csv (daily Search Console totals for
+# Search Console data: every 2 days it rewrites stats/gsc.csv (daily Search Console totals for
 # licenta-disertatie-romania.com, scripts/fetch-gsc.mjs) and opens one PR `gsc-data/<date>`, or pushes
 # to its PR while that one is still open. No PR when Google has no new day. A plain script, no Claude:
 # it replaces the claude.ai routine (2026-11-01); the twin workflow is search-console.yml in
@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 10
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      CSV: licenta-stats/gsc.csv
+      CSV: stats/gsc.csv
     steps:
       - uses: actions/checkout@v7
         with:
@@ -83,7 +83,7 @@ jobs:
           read -r clicks impr < <(tail -n +2 "$CSV" | tail -n 28 | awk -F, '{c += $2; i += $3} END {print c, i}')
           body="$RUNNER_TEMP/body.md"
           {
-            printf '%s\n\n' 'Refreshes `licenta-stats/gsc.csv` (daily Search Console totals for licenta-disertatie-romania.com).'
+            printf '%s\n\n' 'Refreshes `stats/gsc.csv` (daily Search Console totals for licenta-disertatie-romania.com).'
             printf -- '- Previous last date: %s\n' "$PREV"
             printf -- '- New last date: %s\n' "$last"
             printf -- '- Days in file: %s (%s to %s)\n' "$days" "$first" "$last"

@@ -1,24 +1,11 @@
-// Fetch Google Search Console daily totals for licenta-disertatie-romania.com into licenta-stats/gsc.csv:
-// one row per day, Date,Clicks,Impressions,CTR,Position (same columns as Search Console's "Dates" export).
-// Rewrites the whole file each run from everything the API keeps (16 months), so it is always complete.
-// Totals only: no queries or pages, since this repo's files are public on the personal site.
-// No dependencies: signs the service-account JWT with node:crypto.
-//
-// Key, in order of precedence:
-//   GSC_KEY_JSON  the service-account JSON, raw or base64 (the cloud routine sets this)
-//   GSC_KEY_FILE  path to the JSON file (handy locally)
-// Never print the key.
-//
-// Usage: node scripts/fetch-gsc.mjs
-
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const SITE = 'sc-domain:licenta-disertatie-romania.com';
-const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'licenta-stats', 'gsc.csv');
-const HISTORY_DAYS = 486; // the API keeps about 16 months
+const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'stats', 'gsc.csv');
+const HISTORY_DAYS = 486;
 
 function loadKey() {
   let raw = process.env.GSC_KEY_JSON;
@@ -82,8 +69,6 @@ const rows = await query(accessToken, {
 const seen = rows.filter((r) => r.impressions > 0);
 if (!seen.length) throw new Error('No data returned');
 
-// One row per day from the first day with impressions to the last final day. Days with no impressions
-// get 0 and no position (Google returns empty rows back to when the property was added).
 const byDate = new Map(seen.map((r) => [r.keys[0], r]));
 const firstDay = seen[0].keys[0];
 const lastDay = rows.at(-1).keys[0];
