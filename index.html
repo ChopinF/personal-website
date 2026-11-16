@@ -308,7 +308,7 @@ function windowResized() {
     let loaded = false;
     function loadStats() {
       if (loaded) return;
-      fetch('./licenta-stats/gsc.csv').then(r => r.text()).then(text => {
+      fetch('./stats/gsc.csv').then(r => r.text()).then(text => {
         loaded = true;
         const rows = text.trim().split('\n').slice(1).map(l => l.split(','));
         const col = i => rows.map(r => r[i] === '' ? null : parseFloat(r[i]));
